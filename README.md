@@ -1,17 +1,24 @@
-
 # DraftMan - WoW Ascension S4 Draft Mode Reroller
-__DISCLAIMER: this addon was very roughly and quickly put together over a night so there might be bugs!__
 
-* Auto-roller for Project Ascension Season 4 Draft Mode 
-* Designed with a key spammer in mind
-* Simple GUI for selecting spells/sets
+**DISCLAIMER: this addon was very roughly and quickly put together over a night so there might be bugs!**
+
+- Auto-roller for Project Ascension Season 4 Draft Mode
+- Designed with a key spammer in mind
+- Simple GUI for selecting spells/sets
+
+## Installation
+
+- Go to releases and download source code
+- Open the zip file and open the folder Ascension-DraftMode-Reroller-v.X
+- Drag the folder DraftMan into your WoW-Ascension addons folder
 
 ## Guide
-* Click the "create macro" button and put the macro on the Action Bar (Action Bar 1)
-* Open a set (click button "SET1" etc..) and fill the fields with the Spell ids you want (list below)
-* If you want to target more than one spell in a field you can seperate them by commas eg. "172, 688"
-* Start spamming the Macro (or use your prefered key spammer)
-* When a set is found the addon will delete the macro and logout
+
+- Click the "create macro" button and put the macro on the Action Bar (Action Bar 1)
+- Open a set (click button "SET1" etc..) and fill the fields with the Spell ids you want (list below)
+- If you want to target more than one spell in a field you can seperate them by commas eg. "172, 688"
+- Start spamming the Macro (or use your prefered key spammer)
+- When a set is found the addon will delete the macro and logout
 
 ### An example of a set:
 
@@ -25,9 +32,10 @@ At the moment the selection of what set to roll for is very simple; the lowered 
 If Set1 and Set2 shares the same spell and it shows up on Roll1 the rest of the Cards for that roll will be checked against
 Set1's required spells. It is therefore recommended to not have that many overlapping spells between sets (if any).
 
+## Spell ids
 
-##  Spell ids
 NOTE: list taken from [another reroll addon](https://github.com/Malow/MaloWAscensionReroller#statistics-from-randomly-picking-spells)(much more advanced and feature rich than this one)
+
 - Corruption - 172
 - Charge - 100
 - Seal of Righteousness - 21084
