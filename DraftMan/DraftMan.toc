@@ -1,0 +1,9 @@
+## Interface: 30300
+## Notes: Auto-roller for Project Ascension Season 4 Draft Mode 
+## Title: DraftMan by pyrbin
+## Author: pyrbin
+## SavedVariables: DRAFT_MAN_MACRO_ID
+## SavedVariablesPerCharacter: DRAFT_MAN_INPUTS, DRAFT_MAN_SETS
+
+# Core
+DraftMan.xml

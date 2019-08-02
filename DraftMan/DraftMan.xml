@@ -1,0 +1,275 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/">
+    <Script file="DraftMan.lua"/>
+    <Frame name="DraftManFrame" enableMouse="true" movable="true">
+        <Size x="150" y="180"/>
+        <Anchors>
+            <Anchor point="RIGHT">
+                <Offset>
+                    <AbsDimension x="-400" y="100" />
+                </Offset>
+            </Anchor>
+        </Anchors>
+        <Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
+            <BackgroundInsets left="4" right="4" top="4" bottom="4"/>
+            <EdgeSize val="12"/>
+            <TileSize val="24"/>
+            <Color r="0.1" g="0.3" b="0.4" a="0.9"/>
+            <BorderColor r="1" g="1" b="1" a="1"/>
+        </Backdrop>
+        <Layers>
+            <Layer level="OVERLAY ">
+                <FontString name="$parent_Title" font="Fonts\FRIZQT__.TTF" text="DraftMan-v.1 by pyrbin">
+                    <Color r="1" g="1" b="1" a="1"/>
+                    <FontHeight val="8"/>
+                    <Anchors>
+                        <Anchor point="BOTTOM" y="7.3"/>
+                    </Anchors>
+                </FontString>
+                <FontString name="$parent_RerollBar_Text" font="Fonts\FRIZQT__.TTF" text="Drag Macro to ActionBar!">
+                    <Color r="1" g="0" b="0" a="1"/>
+                    <FontHeight val="10"/>
+                    <Anchors>
+                        <Anchor point="CENTER" y="20"/>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Scripts>
+            <OnDragStart>
+                self:StartMoving();
+            </OnDragStart>
+            <OnDragStop>
+                self:StopMovingOrSizing();
+            </OnDragStop>
+            <OnLoad> 
+                self:RegisterForDrag("LeftButton");
+                DraftMan_OnLoad();
+            </OnLoad>
+            <OnEvent>
+                DraftMan_OnEvent(event);
+            </OnEvent>
+            <OnUpdate>
+                DraftMan_OnUpdate();
+            </OnUpdate>
+        </Scripts>
+        <Frames>
+            <Button name="$parent_UnlockFrames" text="unlock" inherits="UIPanelButtonTemplate">
+                <Size x="25" y="25"/>
+                <Anchors>
+                    <Anchor point="TOP" y="-5" x="55"/>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        DraftMan_LockInputFrames(false);
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <CheckButton name="$parent_RerollBar" inherits="ActionBarButtonTemplate" id="1" action="1">
+                <Anchors>
+                    <Anchor point="TOP" y="-22"/>
+                </Anchors>
+            </CheckButton>
+            <Button name="$parent_CreateMacroButton" text="create macro" inherits="UIPanelButtonTemplate">
+                <Size x="90" y="25"/>
+                <Anchors>
+                    <Anchor point="TOP" y="-82"/>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                    DraftMan_CreateMacroButton();
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Frame name="$parent_SetButtons" inherits="BasicFrameTemplate">
+                <Size x="125" y="40"/>
+                <Anchors>
+                    <Anchor point="BOTTOM" y="25"/>
+                </Anchors>
+                <Frames>
+                    <Button name="$parent1" text="SET1" inherits="UIPanelButtonTemplate">
+                        <Size x="40" y="25"/>
+                        <Anchors>
+                            <Anchor point="LEFT"/>
+                        </Anchors>
+                        <Scripts>
+                            <OnClick>
+                                DraftMan_OpenSetFrame(1, self)
+                            </OnClick>
+                        </Scripts>
+                    </Button>
+                    <Button name="$parent2" text="SET2" inherits="UIPanelButtonTemplate">
+                        <Size x="40" y="25"/>
+                        <Anchors>
+                            <Anchor point="CENTER"/>
+                        </Anchors>
+                        <Scripts>
+                            <OnClick>
+                                DraftMan_OpenSetFrame(2, self)
+                            </OnClick>
+                        </Scripts>
+                    </Button>
+                    <Button name="$parent3" text="SET3" inherits="UIPanelButtonTemplate">
+                        <Size x="40" y="25"/>
+                        <Anchors>
+                            <Anchor point="RIGHT"/>
+                        </Anchors>
+                        <Scripts>
+                            <OnClick>
+                                DraftMan_OpenSetFrame(3, self)
+                            </OnClick>
+                        </Scripts>
+                    </Button>
+                </Frames>
+            </Frame>
+            <Frame name="$parent_SpellSet">
+                <Size x="150" y="180"/>
+                <Anchors>
+                    <Anchor point="RIGHT">
+                        <Offset>
+                            <AbsDimension x="150" />
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
+                    <BackgroundInsets left="4" right="4" top="4" bottom="4"/>
+                    <EdgeSize val="12"/>
+                    <TileSize val="24"/>
+                    <Color r="0.05" g="0.1" b="0.2" a="1"/>
+                    <BorderColor r="1" g="1" b="1" a="1"/>
+                </Backdrop>
+                <Layers>
+                    <Layer level="OVERLAY ">
+                        <FontString name="$parent_Title" font="Fonts\FRIZQT__.TTF" text="Spell Set">
+                            <Color r="1" g="1" b="1" a="1"/>
+                            <FontHeight val="12"/>
+                            <Anchors>
+                                <Anchor point="TOP" y="-10"/>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+                <Scripts>
+                </Scripts>
+                <Frames>
+                    <EditBox name="$parent_Input1" inherits="InputBoxTemplate" autoFocus="false">
+                        <Size x="115" y="25"/>
+                        <Anchors>
+                            <Anchor point="TOP" y="-30" x="10"/>
+                        </Anchors>
+                        <Scripts>
+                            <OnTabPressed>
+                                DraftManFrame_SpellSet_Input2:SetFocus();
+                            </OnTabPressed>
+                            <OnEnterPressed>
+                                self:ClearFocus();
+                            </OnEnterPressed>
+                            <OnTextChanged>
+                                DraftManFrame_OnInputEdit(1, self);
+                            </OnTextChanged>
+                        </Scripts>
+                        <FontString inherits="GameFontNormalSmall"/>
+                        <Layers>
+                            <Layer level="OVERLAY ">
+                                <FontString name="$parent_Title" font="Fonts\FRIZQT__.TTF" text="#1">
+                                    <Color r="1" g="1" b="1" a="1"/>
+                                    <FontHeight val="12"/>
+                                    <Anchors>
+                                        <Anchor point="LEFT" x="-22"/>
+                                    </Anchors>
+                                </FontString>
+                            </Layer>
+                        </Layers>
+                    </EditBox>
+                    <EditBox name="$parent_Input2" inherits="InputBoxTemplate" autoFocus="false">
+                        <Size x="115" y="25"/>
+                        <Anchors>
+                            <Anchor point="BOTTOM" relativeTo="$parent_Input1" y="-25"/>
+                        </Anchors>
+                        <Scripts>
+                            <OnTabPressed>
+                                DraftManFrame_SpellSet_Input3:SetFocus();
+                            </OnTabPressed>
+                            <OnEnterPressed>
+                                self:ClearFocus();
+                            </OnEnterPressed>
+                            <OnTextChanged>
+                                DraftManFrame_OnInputEdit(2, self);
+                            </OnTextChanged>
+                        </Scripts>
+                        <FontString inherits="GameFontNormalSmall"/>
+                        <Layers>
+                            <Layer level="OVERLAY ">
+                                <FontString name="$parent_Title" font="Fonts\FRIZQT__.TTF" text="#2">
+                                    <Color r="1" g="1" b="1" a="1"/>
+                                    <FontHeight val="12"/>
+                                    <Anchors>
+                                        <Anchor point="LEFT" x="-22"/>
+                                    </Anchors>
+                                </FontString>
+                            </Layer>
+                        </Layers>
+                    </EditBox>
+                    <EditBox name="$parent_Input3" inherits="InputBoxTemplate" autoFocus="false">
+                        <Size x="115" y="25"/>
+                        <Anchors>
+                            <Anchor point="BOTTOM" relativeTo="$parent_Input2" y="-25"/>
+                        </Anchors>
+                        <Scripts>
+                            <OnTabPressed>
+                                DraftManFrame_SpellSet_Input4:SetFocus();
+                            </OnTabPressed>
+                            <OnEnterPressed>
+                                self:ClearFocus();
+                            </OnEnterPressed>
+                            <OnTextChanged>
+                                DraftManFrame_OnInputEdit(3, self);
+                            </OnTextChanged>
+                        </Scripts>
+                        <FontString inherits="GameFontNormalSmall"/>
+                        <Layers>
+                            <Layer level="OVERLAY ">
+                                <FontString name="$parent_Title" font="Fonts\FRIZQT__.TTF" text="#3">
+                                    <Color r="1" g="1" b="1" a="1"/>
+                                    <FontHeight val="12"/>
+                                    <Anchors>
+                                        <Anchor point="LEFT" x="-22"/>
+                                    </Anchors>
+                                </FontString>
+                            </Layer>
+                        </Layers>
+                    </EditBox>
+                    <EditBox name="$parent_Input4" inherits="InputBoxTemplate" autoFocus="false">
+                        <Size x="115" y="25"/>
+                        <Anchors>
+                            <Anchor point="BOTTOM" relativeTo="$parent_Input3" y="-25"/>
+                        </Anchors>
+                        <Scripts>
+                            <OnTabPressed>
+                                self:ClearFocus();
+                            </OnTabPressed>
+                            <OnEnterPressed>
+                                self:ClearFocus();
+                            </OnEnterPressed>
+                            <OnTextChanged>
+                                DraftManFrame_OnInputEdit(4, self);
+                            </OnTextChanged>
+                        </Scripts>
+                        <FontString inherits="GameFontNormalSmall"/>
+                        <Layers>
+                            <Layer level="OVERLAY ">
+                                <FontString name="$parent_Title" font="Fonts\FRIZQT__.TTF" text="#4">
+                                    <Color r="1" g="1" b="1" a="1"/>
+                                    <FontHeight val="12"/>
+                                    <Anchors>
+                                        <Anchor point="LEFT" x="-22"/>
+                                    </Anchors>
+                                </FontString>
+                            </Layer>
+                        </Layers>
+                    </EditBox>
+                </Frames>
+            </Frame>
+        </Frames>
+    </Frame>
+</Ui>
