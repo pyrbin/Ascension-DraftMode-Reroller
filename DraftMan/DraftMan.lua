@@ -22,6 +22,7 @@ local draftDeckId = 777994
 local isDraftReady = false
 local isDraftRolling = false
 local isDraftPreparing = false
+local freezeRolling = false
 
 local lastUpdate = 0
 local openSetFrame = -1
@@ -131,10 +132,11 @@ function DraftMan_SetActive()
 end
 
 function DraftMan_StartRolling()
-    if not (deckIsOnCooldown() and isDraftReady 
-    and not isDraftRolling and deckModeLoaded() 
-    and macroExists() and not DRAFT_MAN_WINDOW_HIDDEN 
-    and not isDraftPreparing and DRAFT_MAN_MACRO_CLICKED) then 
+    if not (deckIsOnCooldown() and isDraftReady
+    and not isDraftRolling and deckModeLoaded()
+    and macroExists() and not DRAFT_MAN_WINDOW_HIDDEN
+    and not freezeRolling and not isDraftPreparing
+    and DRAFT_MAN_MACRO_CLICKED) then
         return
     end
 
@@ -200,9 +202,13 @@ function DraftMan_StopRolling()
 end
 
 function DraftMan_Exit() 
+    freezeRolling = true
     DraftMan_StopRolling()
     DraftMan_DeleteMacroButton()
     Logout()
+    DraftMan_wait(3, function ()
+        freezeRolling = false
+    end)
 end
 
 function DraftMan_SelectCardToPick(cards)
