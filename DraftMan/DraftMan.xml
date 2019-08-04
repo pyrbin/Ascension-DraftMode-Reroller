@@ -26,7 +26,7 @@
                         <Anchor point="BOTTOM" y="7.3"/>
                     </Anchors>
                 </FontString>
-                <FontString name="$parent_RerollBar_Text" font="Fonts\FRIZQT__.TTF" text="Drag Macro to ActionBar!">
+                <FontString name="$parent_RerollBar_Text" font="Fonts\FRIZQT__.TTF" text="Drag Deck to ActionBar!">
                     <Color r="1" g="0" b="0" a="1"/>
                     <FontHeight val="10"/>
                     <Anchors>
@@ -65,19 +65,41 @@
                     </OnClick>
                 </Scripts>
             </Button>
-            <CheckButton name="$parent_RerollBar" inherits="ActionBarButtonTemplate" id="1" action="1">
+            <Button name="$parent_HideFrameButton" text="" inherits="UIPanelCloseButton">
+                <Size x="25" y="25"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" y="0" x="0"/>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        DraftManFrame_SetFrameVisibility(false)
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <CheckButton name="$parent_RerollBar" inherits="ActionBarButtonTemplate" id="99" action="99">
                 <Anchors>
                     <Anchor point="TOP" y="-22"/>
                 </Anchors>
             </CheckButton>
-            <Button name="$parent_CreateMacroButton" text="create macro" inherits="UIPanelButtonTemplate">
-                <Size x="90" y="25"/>
+            <Button name="$parent_CreateMacroButton" text="macro" inherits="UIPanelButtonTemplate">
+                <Size x="45" y="25"/>
                 <Anchors>
-                    <Anchor point="TOP" y="-82"/>
+                    <Anchor point="TOPLEFT" x="25" y="-82"/>
                 </Anchors>
                 <Scripts>
                     <OnClick>
                     DraftMan_CreateMacroButton();
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Button name="$parent_PickupDeckButton" text="deck" inherits="UIPanelButtonTemplate">
+                <Size x="45" y="25"/>
+                <Anchors>
+                    <Anchor point="TOPRIGHT" x="-25" y="-82"/>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                    DraftMan_PickupDeck();
                     </OnClick>
                 </Scripts>
             </Button>

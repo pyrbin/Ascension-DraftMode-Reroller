@@ -1,10 +1,11 @@
 # DraftMan - WoW Ascension S4 Draft Mode Reroller
 
-**DISCLAIMER: this addon was very roughly and quickly put together over a night so there might be bugs!**
+**DISCLAIMER: this addon was very roughly and quickly put together over 2\* nights so there might be bugs!**
 
 - Auto-roller for Project Ascension Season 4 Draft Mode
-- Designed with a key spammer in mind
+- Designed with a key spammer in mind (its spammable)
 - Simple GUI for selecting spells/sets
+- Rolling as fast as possible (approx every 2-2.5s)
 
 ## Installation
 
@@ -14,23 +15,42 @@
 
 ## Guide
 
-- Click the "create macro" button and put the macro on the Action Bar (Action Bar 1)
+- Drag your "Draft Mode Deck" onto the Action Bar on the addon window (you can click the button "deck" to automatically pick it up)
+- Click the "macro" button and put the macro on your prefered action bar
 - Open a set (click button "SET1" etc..) and fill the fields with the Spell ids you want (list below)
 - If you want to target more than one spell in a field you can seperate them by commas eg. "172, 688"
 - Start spamming the Macro (or use your prefered key spammer)
 - When a set is found the addon will delete the macro and logout
 
+NOTE: Do not spam the deck item, only spam the macro!!!
+
+![](use-example.gif "example use")
+
 ### An example of a set:
 
-![alt text](example.png "Logo Title Text 1")
+![](example.png "example set")
 
 In this case the addon will keep rolling till Corruption (172) + either Summon Imp (688) or Shadow Bolt (686) is aquired
 
-## What set is chosen?
+## Commands
 
-At the moment the selection of what set to roll for is very simple; the lowered number set will always have priority.
-If Set1 and Set2 shares the same spell and it shows up on Roll1 the rest of the Cards for that roll will be checked against
-Set1's required spells. It is therefore recommended to not have that many overlapping spells between sets (if any).
+- `/draftman show` - Show DraftMan window
+- `/draftman hide` - Hide DraftMan window
+
+## What Set is chosen?
+
+At each roll of a draft the Set closest to completion is selected and a card/spell is picked based on the spells specified in the set.
+If different sets are equally close the order will be based on lowest number eg. Set1 > Set2 > Set3.
+Therefore having multiple sets with varying numbers of spells is not advised as the shorter ones will generally be picked.
+
+## Troubleshooting
+
+If you have problems try the following:
+
+- /reload to reload the UI
+- try spamming the macro a bit
+
+If you find a bug or have suggestions please open an issue or contact me on Discord @ frans#8211
 
 ## Spell ids
 
@@ -51,7 +71,7 @@ NOTE: list taken from [another reroll addon](https://github.com/Malow/MaloWAscen
 - Power Word: Fortitude - 1243
 - Concussive Shot - 5116
 - Swipe (Bear) - 779
-- Fireball - 133F
+- Fireball - 133
 - Arcane Intellect - 1459
 - Backstab - 53
 - Blessing of Wisdom - 19742

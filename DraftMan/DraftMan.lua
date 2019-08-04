@@ -1,4 +1,6 @@
--- Global
+---===[ GLobal variables ]===--- 
+DRAFT_MAN_MACRO_CLICKED = false
+DRAFT_MAN_WINDOW_HIDDEN = false
 DRAFT_MAN_MACRO_ID = -1
 DRAFT_MAN_SETS = {
     [1] = { [1] = nil, [2] = nil, [3] = nil, [4] = nil },
@@ -11,67 +13,40 @@ DRAFT_MAN_INPUTS = {
     [3] = { [1] = "", [2] = "", [3] = "", [4] = "" }
 }
 
--- Local 
-local macroName = "DraftManReroll - DO NOT TOUCH";
+---===[ Local variables ]===--- 
+
+local addonName = "draftman"
+local macroName = "DraftMan - Spam Macro"
+local draftDeckId = 777994
 
 local isDraftReady = false
 local isDraftRolling = false
+local isDraftPreparing = false
 
 local lastUpdate = 0
-local pickedSpells = {}
-
 local openSetFrame = -1
-local lastButton = nil
 
-local prioritySet = nil
-local prioritySetFlags = {}
+local setFlags = { [1] = {}, [2] = {}, [3] = {}}
 
--- Prints message in chatbox
-function DraftMan_log(msg)
-	ChatFrame1:AddMessage("[DraftMan]: " .. tostring(msg))
-end
+local cardCounter = 0
+local cardPickDelay = 0.5
+local cardSpellLookup = {
+    [1] = nil,
+    [2] = nil,
+    [3] = nil
+}
 
--- Gets spell card info
-function getCardSpellInfo(index)
-    local spells = {
-        [1] = Card1.SpellFrame.Icon.Spell,
-        [2] = Card2.SpellFrame.Icon.Spell,
-        [3] = Card3.SpellFrame.Icon.Spell
-    }
-    local name = GetSpellInfo(spells[index])
-	return spells[index], name
-end
+local hookedCardButtons = false
 
--- Learn spell card at position
-function learnSpellCardAt(index)
-    _G["Card" .. tostring(index) .. "LearnSpellButton"]:Click()
-end
+local learnCardIdx = nil
+local tryLearnCard = false
 
--- If deck (macro) is equiped at actionbar 1
-function deckIsEquiped()
-    local _, i, _ = GetActionInfo(DraftManFrame_RerollBar.action)
-    return i == DRAFT_MAN_MACRO_ID;
-end
+local MAX_CARD_ROLLS = 4
+local MAX_CARD_ROLLS_WITH_TAME_BEAST = 2
 
--- If deck is on cooldown eg. has recently been used
-function deckIsOnCooldown()
-    local draftDeckId = 777994
-    local _, d, _ = GetItemCooldown(draftDeckId)
-    return d > 0;
-end
 
--- Empty tables
-function emptyTable(t)
-    count = #t
-    for i=0, count do t[i]=nil end
-end
+---===[ Frame events  ]===--- 
 
-function printTable(t)
-    count = #t 
-    for i=0, count do print(t[i]) end
-end
-
--- Frame functions
 function DraftMan_OnLoad()
     this:RegisterEvent("VARIABLES_LOADED")
     this:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
@@ -83,25 +58,14 @@ function DraftMan_OnEvent(event)
     if event == "VARIABLES_LOADED" then
         DraftMan_OnInit()
     end
-    
-    if event == "ACTIONBAR_SLOT_CHANGED" and arg1 == DraftManFrame_RerollBar.action then
+
+    if event == "ACTIONBAR_SLOT_CHANGED" and arg1 == DraftManFrame_RerollBar.action and not DRAFT_MAN_WINDOW_HIDDEN then
         DraftMan_CheckMacroValid()
     end
 
     if event == "ACTIONBAR_UPDATE_COOLDOWN" then
-        if deckIsOnCooldown() and isDraftReady and not isDraftRolling then
-            DraftMan_StartRolling()
-        end
-    end
-end
-
-function DraftMan_CheckMacroValid()
-    if deckIsEquiped() then
-        DraftMan_SetActive()
-        DraftManFrame_CreateMacroButton:Disable()
-    else 
-        DraftMan_SetInActive()
-        DraftManFrame_CreateMacroButton:Enable()
+        DraftMan_StartRolling()
+        DRAFT_MAN_MACRO_CLICKED = false
     end
 end
 
@@ -109,10 +73,248 @@ function DraftMan_OnInit()
     -- Reroll bar state
     DraftManFrame_SpellSet:Hide();
     DraftManFrame_UnlockFrames:Hide()
+    DraftManFrame_SetFrameVisibility(DRAFT_MAN_WINDOW_HIDDEN)
     DraftMan_CheckMacroValid()
 end
 
+function DraftMan_OnCardLearned()
+    tryLearnCard = false
+    for setIdx, flags in ipairs(setFlags) do
+        if table.getn(flags) == 4 then
+            DraftMan_log("|cFFE040FBWe found all picked spells for Set" .. setIdx)
+            DraftMan_Exit()
+            return
+        end
+    end
+end
+
+function DraftMan_OnUpdate()
+    if not isDraftRolling then return end
+    local hasChanged = false
+    
+    for i = 1, 3 do
+        local id, name = getCardSpellInfo(i)
+        if not hasChanged and id ~= cardSpellLookup[i] then
+            hasChanged = true
+        end
+        cardSpellLookup[i] = id
+    end
+
+    if hasChanged and isDraftRolling then
+        cardCounter = cardCounter + 1
+        DraftMan_log("Card Reroll: " .. cardCounter)
+        learnCardIdx = DraftMan_SelectCardToPick(cardSpellLookup)
+        tryLearnCard = true
+    end
+
+    if tryLearnCard and learnCardIdx ~= nil then
+        learnSpellCardAt(learnCardIdx)
+    end
+
+    if not DraftModeAccess:IsVisible() then
+        DraftMan_log("Drafting done, did not find a set")
+        DraftMan_StopRolling()
+    end
+
+end
+
+---===[ Re-roll Logic  ]===--- 
+
+function DraftMan_SetInActive()
+    _G["DraftManFrame_RerollBar_Text"]:Show()
+    isDraftReady = false
+end
+
+function DraftMan_SetActive()
+    _G["DraftManFrame_RerollBar_Text"]:Hide()
+    isDraftReady = true
+end
+
+function DraftMan_StartRolling()
+    if not (deckIsOnCooldown() and isDraftReady 
+    and not isDraftRolling and deckModeLoaded() 
+    and macroExists() and not DRAFT_MAN_WINDOW_HIDDEN 
+    and not isDraftPreparing and DRAFT_MAN_MACRO_CLICKED) then 
+        return
+    end
+
+    isDraftPreparing = true
+    DraftMan_LockInputFrames(true)
+
+    if not hookedCardButtons then
+        for i = 1,3 do
+            _G["Card" .. tostring(i) .. "LearnSpellButton"]:HookScript("OnClick", DraftMan_OnCardLearned)
+        end
+        hookedCardButtons = true
+    end
+
+    for i = 1, 3 do
+        for j = 1, 4 do
+            local spells = DraftMan_ParseSpells(DRAFT_MAN_INPUTS[i][j])
+            DRAFT_MAN_SETS[i][j] = spells
+            if next(spells) == nil then
+                table.insert(setFlags[i], j)
+            end
+        end
+    end
+
+    local count = 0
+
+    for i = 1, 3 do
+        if (table.getn(setFlags[i]) == 4) then
+            count = count + 1
+            setFlags[i] = {}
+        end
+    end
+
+    if count == 4 then
+        DraftMan_log("|cFF00FF00Canceled Roll, all sets empty!")
+    end
+
+    StaticPopup1Button1:Click()
+
+    DraftMan_wait(.33, function()
+        DraftMan_log("|cFF00FF00Start Rolling")
+        isDraftRolling = true
+        isDraftPreparing = false
+    end)
+
+end
+
+function DraftMan_StopRolling()
+    local tameBeastId = 965200
+    
+    if not (cardCounter == MAX_CARD_ROLLS or (cardCounter == MAX_CARD_ROLLS_WITH_TAME_BEAST and IsSpellKnown(tameBeastId))) then
+        DraftMan_log("|cFFFF0000Missed rolls, stopped @ " .. cardCounter)
+    end
+
+    isDraftRolling = false
+
+    DraftMan_wait(.25, function()
+        setFlags = { [1] = {}, [2] = {}, [3] = {} }
+        cardCounter = 0
+        DraftMan_LockInputFrames(false)
+        DraftMan_log("|cFFFF0000Stop Rolling")
+    end)
+
+end
+
+function DraftMan_Exit() 
+    DraftMan_StopRolling()
+    DraftMan_DeleteMacroButton()
+    Logout()
+end
+
+function DraftMan_SelectCardToPick(cards)
+    local cardToPick = 1
+    local setInfo = {}
+    local minSpellsLeft = 99
+    local minSpellIdx = -1
+
+    -- Select card
+    for setIdx, set in ipairs(DRAFT_MAN_SETS) do
+        if (table.getn(setFlags[setIdx]) >= 0) then
+            local found, spellsLeft, cardIdx, entryIdx = DraftMan_StepsToComplete(cards, setIdx)
+            setInfo[setIdx] = { 
+                ["found"] = found, ["spellsLeft"] = spellsLeft, 
+                ["cardIdx"] = cardIdx, ["entryIdx"] = entryIdx
+            }
+            if spellsLeft < minSpellsLeft then
+                minSpellsLeft = spellsLeft
+                minSpellIdx = setIdx
+            end
+        end
+    end
+
+    local pickedInfo = setInfo[minSpellIdx]
+
+    if pickedInfo.found then
+        cardToPick = pickedInfo.cardIdx
+        for setIdx, info in ipairs(setInfo) do
+            if info.found and info.cardIdx == pickedInfo.cardIdx then
+                table.insert(setFlags[setIdx], info.entryIdx)
+                if setIdx == minSpellIdx then
+                    DraftMan_log("|cFFE040FBFound spell for Set"..minSpellIdx.." | Entry: "..pickedInfo.entryIdx)
+                    DraftMan_log("|cFFE040FBSpells left: "..DraftMan_SpellsLeft(minSpellIdx))
+                    cardToPick = pickedInfo.cardIdx
+                end
+            end
+        end
+    end
+
+    return cardToPick
+end
+
+function DraftMan_SpellsLeft(setIdx)
+    return MAX_CARD_ROLLS - table.getn(setFlags[setIdx])
+end
+
+function DraftMan_StepsToComplete(cards, setIdx)
+    local set = DRAFT_MAN_SETS[setIdx]
+    local spellsLeft = DraftMan_SpellsLeft(setIdx)
+    for cardIdx, cardSpell in ipairs(cards) do
+        for entryIdx, entry in ipairs(set) do
+            if not hasValue(setFlags[setIdx], entryIdx) then
+                for _, spell in ipairs(entry) do
+                    if cardSpell == spell then 
+                        spellsLeft = spellsLeft - 1
+                        return true, spellsLeft, cardIdx, entryIdx
+                    end
+                end
+            end
+        end
+    end
+    return false, spellsLeft, nil, nil
+end
+
+function DraftMan_ParseSpells(input)
+    local spells = {}
+    for spell in string.gmatch(input, '([^,]+)') do
+        -- Trim string
+        spell = spell:gsub("^%s*(.-)%s*$", "%1")
+        -- Remove non numerics
+        spell = spell:gsub("[^0-9]", "")
+        -- To number
+        spell = tonumber(spell)
+        table.insert(spells, spell)
+    end
+    return spells
+end
+
+---===[ Frame handling  ]===--- 
+
+function DraftMan_CheckMacroValid()
+    if deckIsEquiped() then
+        DraftMan_SetActive()
+        DraftManFrame_PickupDeckButton:Disable()
+    else 
+        DraftMan_SetInActive()
+        DraftManFrame_PickupDeckButton:Enable()
+    end
+end
+
+function DraftManFrame_SetFrameVisibility(status)
+    if status then DraftManFrame:Show()
+    else DraftManFrame:Hide() end
+    DRAFT_MAN_WINDOW_HIDDEN = not status
+    DraftMan_CheckMacroValid()
+end
+
+function DraftMan_CreateMacroButton()
+    DraftMan_DeleteMacroButton()
+    DRAFT_MAN_MACRO_ID = CreateMacro(macroName, 10, "#show\n/script _G['DRAFT_MAN_MACRO_CLICKED'] = true\n/click DraftManFrame_RerollBar", nil)
+    DraftMan_log("Macro created! Please put it on action bar 1.")
+    PickupMacro(macroName)
+end
+
+function DraftMan_DeleteMacroButton()
+    DeleteMacro(macroName);
+end
+
 function DraftMan_LockInputFrames(lockFlag)
+    -- Action bar lock
+    if lockFlag then DraftManFrame_RerollBar:Disable()
+    else DraftManFrame_RerollBar:Enable() end
     -- Buttons lock
     if lockFlag then
         DraftManFrame_SetButtons1:Disable()
@@ -130,58 +332,10 @@ function DraftMan_LockInputFrames(lockFlag)
         DraftManFrame_UnlockFrames:Hide()
     end
     DraftMan_CheckMacroValid()
-    -- Action bar lock
-    DraftManFrame_RerollBar:EnableKeyboard(not lockFlag)
-    DraftManFrame_RerollBar:EnableMouse(not lockFlag)
-end
-
-function DraftMan_StartRolling()
-    isDraftRolling = false
-    DraftMan_LockInputFrames(true)
-    StaticPopup1Button1:Click()
-
-    for i = 1, 3 do
-        for j = 1, 4 do
-            local spells = DraftManFrame_ParseSets(DRAFT_MAN_INPUTS[i][j])
-            DRAFT_MAN_SETS[i][j] = spells
-        end
-    end
-
-    DraftMan_wait(.25, function()
-        isDraftRolling = true
-    end)
-
-end
-
-function DraftMan_StopRolling()
-    prioritySet = nil
-    emptyTable(prioritySetFlags)
-    isDraftRolling = false
-    DraftMan_LockInputFrames(false)
-end
-
-function DraftMan_FoundSet() 
-    DraftMan_StopRolling()
-    DraftMan_DeleteMacroButton()
-    Logout()
 end
 
 function DraftManFrame_OnInputEdit(input, editbox)
     DRAFT_MAN_INPUTS[openSetFrame][input] = editbox:GetText()
-end
-
-function DraftManFrame_ParseSets(input)
-    local spells = {}
-    for spell in string.gmatch(input, '([^,]+)') do
-        -- Trim string
-        spell = spell:gsub("^%s*(.-)%s*$", "%1")
-        -- Remove non numerics
-        spell = spell:gsub("[^0-9]", "")
-        -- To number
-        spell = tonumber(spell)
-        table.insert(spells, spell)
-    end
-    return spells
 end
 
 function DraftMan_OpenSetFrame(set, button)
@@ -206,111 +360,86 @@ function DraftMan_OpenSetFrame(set, button)
     end
 end
 
--- todo: does not work FIX
-function DraftMan_OnUpdate(elapsed)
-    if not isDraftRolling then return end
-
-    if lastUpdate + 0.45 > GetTime() then return end
-    lastUpdate = GetTime()
-
-    -- Check if is done
-    if prioritySet ~= nil then
-        local done = true
-        for idx, spells in ipairs(DRAFT_MAN_SETS[prioritySet]) do
-            if not DraftMan_FoundSetEntry(idx, spells) then
-                done = false
-                break
-            end
-        end
-        if done then
-            DraftMan_log("We found all picked spells :)")
-            DraftMan_FoundSet()
-            return
-        end
-    end
-
-    -- Check if Draft mode is enabled
-    if DraftModeAccess == nil or not DraftModeAccess:IsVisible() then
-        DraftMan_log("Draft cards not visible :(")
-        DraftMan_StopRolling()
-        return
-    end
-
-    -- Check if a picked spell is shown
-    local found = false
-
-    -- This monstrosity of a loop :o
-    for i = 1, 3 do
-        local id, name = getCardSpellInfo(i)
-        -- We have found a set
-        if prioritySet ~= nil then
-            for idx, spells in ipairs(DRAFT_MAN_SETS[prioritySet]) do
-                if not DraftMan_FoundSetEntry(idx, spells) then
-                    found = DraftMan_MatchAndLearnSpell(spells, id, i)
-                    if found then
-                        table.insert(prioritySetFlags, idx)
-                        return
-                    end
-                end
-            end
-        else -- Search for a matching set
-            for idx, set in ipairs(DRAFT_MAN_SETS) do
-                for _, spells in ipairs(set) do 
-                    found = DraftMan_MatchAndLearnSpell(spells, id, i)
-                    if found then
-                        prioritySet = idx
-                        return
-                    end
-                end
-            end
-        end
-    end
-
-    -- No picked spell are shown, pick leftmost
-    DraftMan_log("Picking leftmost spell")
-    learnSpellCardAt(1)
-
+function DraftMan_PickupDeck()
+    PickupItem(draftDeckId) 
 end
 
-function DraftMan_FoundSetEntry(idx, spells)
-    if next(spells) == nil then return true end
-    if prioritySetFlags[idx] ~= nil then return true end
-    --for _, spell in ipairs(spells) do
-    --    if IsSpellKnown(spell) then return true end
-    --end
-    return false
+---===[ Slash command ]===--- 
+
+local function DraftMan_HandleSlashCommand(msg)
+    if msg == "show" then
+        DraftManFrame_SetFrameVisibility(true)
+    elseif msg == "hide" then
+        DraftManFrame_SetFrameVisibility(false)
+    end
 end
 
-function DraftMan_MatchAndLearnSpell(spells, id, cardIdx)
-    for _, spellId in ipairs(spells) do
-        if id == spellId then
-            DraftMan_log("Picked spell found @ card"..cardIdx)
-            learnSpellCardAt(cardIdx)
+SlashCmdList["DRAFTMAN"] = DraftMan_HandleSlashCommand
+SLASH_DRAFTMAN1 = "/" .. addonName
+
+---===[ Utilities ]===--- 
+
+-- Prints message in chatbox
+function DraftMan_log(msg)
+	ChatFrame1:AddMessage("|cFFFFC107[DraftMan]: |r" .. tostring(msg))
+end
+
+-- Gets spell card info
+function getCardSpellInfo(index)
+    local spells = {
+        [1] = Card1.SpellFrame.Icon.Spell,
+        [2] = Card2.SpellFrame.Icon.Spell,
+        [3] = Card3.SpellFrame.Icon.Spell
+    }
+    local name = GetSpellInfo(spells[index])
+	return spells[index], name
+end
+
+-- Learn spell card at position
+function learnSpellCardAt(index)
+    _G["Card" .. tostring(index) .. "LearnSpellButton"]:Click()
+end
+
+function macroExists()
+    local name = GetMacroInfo(macroName)
+    return name ~= nil or name ~= ""
+end
+
+-- If deck (macro) is equiped at actionbar 1
+function deckIsEquiped()
+    local _, i = GetActionInfo(DraftManFrame_RerollBar.action)
+    return i == draftDeckId;
+end
+
+-- If deck is on cooldown eg. has recently been used
+function deckIsOnCooldown()
+    local _, d, _ = GetItemCooldown(draftDeckId)
+    return d > 0;
+end
+
+-- Empty tables
+function emptyTable(t)
+    count = #t
+    for i=0, count do t[i]=nil end
+end
+
+-- Print table
+function printTable(t)
+    for _, e in ipairs(t) do print(e) end
+end
+
+function deckModeLoaded()
+    return DraftModeAccess ~= nil
+end
+
+function hasValue (tab, val)
+    for index, value in ipairs(tab) do
+        if value == val then
             return true
         end
     end
+
     return false
-end
-
-function DraftMan_CreateMacroButton()
-    DraftMan_DeleteMacroButton()
-    DRAFT_MAN_MACRO_ID = CreateMacro(macroName, 10, "#show\n/use Draft Mode Deck", nil)
-    DraftMan_log("Macro created! Please put it on action bar 1.")
-    PickupMacro(macroName)
-end
-
-function DraftMan_DeleteMacroButton()
-    DeleteMacro(macroName);
-end
-
-function DraftMan_SetInActive()
-    _G["DraftManFrame_RerollBar_Text"]:Show()
-    isDraftReady = false
-end
-
-function DraftMan_SetActive()
-    _G["DraftManFrame_RerollBar_Text"]:Hide()
-    isDraftReady = true
 end
 
 -- Wait func 
